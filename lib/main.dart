@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:todo_app/models/todo.dart';
 
+const List<String> list = <String>['Important', 'Long-term'];
+
 const primaryColor = Color(0xFF151026);
 
 void main() {
@@ -33,6 +35,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final todolist = Todo.getTodos();
   final myController = TextEditingController();
+  String dropdownValue = list.first;
 
   @override
   void dispose() {
@@ -65,6 +68,29 @@ class _MyHomePageState extends State<MyHomePage> {
               style: TextStyle(fontSize: 24),
             ),
             CreateItem(addItem: _addItem, controller: myController),
+            DropdownButton<String>(
+              value: dropdownValue,
+              icon: const Icon(Icons.arrow_downward),
+              elevation: 16,
+              style: const TextStyle(color: Color(0xFF53DD6C)),
+              underline: Container(
+                height: 2,
+                color: const Color(0xFF53DD6C),
+              ),
+              onChanged: (String? value) {
+                // This is called when the user selects an item.
+                setState(() {
+                  dropdownValue = value!;
+                });
+              },
+              items: list.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 25),
             for (Todo toDo in todolist)
               ToDoItem(
                   todo: toDo,
@@ -77,6 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _toggleCompleted(Todo todo) {
+    assert(todo.isCompleted, "isCompleted is false");
     setState(() {
       todo.isCompleted = !todo.isCompleted;
     });
@@ -90,7 +117,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _addItem(String id, String description) {
     setState(() {
-      todolist.add(Todo(id, description: description));
+      if (dropdownValue == 'Important') {
+        todolist.add(Todo.createTodo(
+            id: id,
+            description: description,
+            isCompleted: false,
+            isImportant: true));
+      } else {
+        todolist.add(Todo(id, description: description));
+      }
     });
   }
 }
@@ -115,14 +150,17 @@ class ToDoItem extends StatelessWidget {
           toggleCompleted(todo);
           print("clicked");
         },
+        tileColor: todo.getColor(),
         title: Text(todo.description!,
             style: TextStyle(
+                color: todo is ImmidiateToDo ? Colors.red : primaryColor,
+                fontWeight:
+                    todo is ImmidiateToDo ? FontWeight.bold : FontWeight.normal,
                 decoration:
                     todo.isCompleted ? TextDecoration.lineThrough : null)),
         leading: Icon(
             todo.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
             color: const Color(0xFF53DD6C)),
-        tileColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
         ),
@@ -145,7 +183,7 @@ class CreateItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 15),
+      margin: const EdgeInsets.only(top: 15),
       padding: const EdgeInsets.only(left: 15.0),
       decoration: BoxDecoration(
         color: Colors.white,
